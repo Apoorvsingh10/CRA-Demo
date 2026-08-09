@@ -1,0 +1,12 @@
+[requires]
+openssl/1.1.1t
+zlib/1.2.11
+libcurl/7.86.0
+sqlite3/3.39.4
+
+[generators]
+CMakeDeps
+CMakeToolchain
+
+[layout]
+cmake_layout

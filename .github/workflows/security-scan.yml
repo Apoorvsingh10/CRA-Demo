@@ -1,0 +1,54 @@
+name: CRA Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ cppcheck
+
+      - name: Build
+        run: |
+          mkdir build && cd build
+          cmake ..
+          make
+
+      - name: cppcheck
+        run: cppcheck --enable=all --error-exitcode=0 --force src/
+
+      - name: SonarCloud
+        uses: SonarSource/sonarcloud-github-action@master
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=apoorvsingh_cra-demo-cpp
+            -Dsonar.organization=apoorvsingh
+            -Dsonar.sources=src
+
+      - name: SBOM
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          echo "========== SBOM =========="
+          syft dir:. -o table
+
+      - name: CVE Scan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+          grype dir:. --only-fixed=false -o table || true
