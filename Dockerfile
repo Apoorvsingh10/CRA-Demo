@@ -1,10 +1,17 @@
-FROM ubuntu:22.04
+# Build stage
+FROM ubuntu:22.04 AS builder
 
-RUN apt-get update && apt-get install -y g++ cmake
+RUN apt-get update && apt-get install -y g++ cmake make
 
-COPY . /app
 WORKDIR /app
+COPY . .
 
 RUN mkdir build && cd build && cmake .. && make
 
-CMD ["./build/cra_demo"]
+# Runtime stage
+FROM ubuntu:22.04
+
+WORKDIR /app
+COPY --from=builder /app/build/cra_demo .
+
+CMD ["./cra_demo"]
